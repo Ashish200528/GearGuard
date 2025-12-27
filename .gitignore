@@ -1,0 +1,38 @@
+# General Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Distribution / Packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE / Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Database (if you have local db files, though you use Postgres)
+*.sqlite3
+*.db
+
+# Logs
+*.log
