@@ -1,0 +1,291 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  Equipment,
+  MaintenanceRequest,
+  MaintenanceStage,
+  EquipmentCategory,
+  MaintenanceTeam,
+  WorkCenter,
+} from '@/types';
+import { equipmentAPI, maintenanceAPI, stagesAPI } from '@/lib/api';
+
+interface AppContextType {
+  equipment: Equipment[];
+  maintenanceRequests: MaintenanceRequest[];
+  stages: MaintenanceStage[];
+  categories: EquipmentCategory[];
+  teams: MaintenanceTeam[];
+  workCenters: WorkCenter[];
+  isLoading: boolean;
+  refreshEquipment: () => Promise<void>;
+  refreshRequests: () => Promise<void>;
+  addEquipment: (equipment: Equipment) => void;
+  updateEquipment: (id: number, equipment: Partial<Equipment>) => void;
+  deleteEquipment: (id: number) => void;
+  addMaintenanceRequest: (request: MaintenanceRequest) => Promise<void>;
+  updateMaintenanceRequest: (id: number, request: Partial<MaintenanceRequest>) => Promise<void>;
+  deleteMaintenanceRequest: (id: number) => void;
+  initializeData: () => Promise<void>;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
+  const [stages, setStages] = useState<MaintenanceStage[]>([]);
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
+  const [teams, setTeams] = useState<MaintenanceTeam[]>([]);
+  const [workCenters, setWorkCenters] = useState<WorkCenter[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshEquipment = async () => {
+    try {
+      const data = await equipmentAPI.getEquipment();
+      setEquipment(data);
+    } catch (error) {
+      console.error('Failed to fetch equipment:', error);
+      // Fallback to localStorage or empty array
+      const stored = localStorage.getItem('gearguard_equipment');
+      if (stored) setEquipment(JSON.parse(stored));
+    }
+  };
+
+  const refreshRequests = async () => {
+    try {
+      const data = await maintenanceAPI.getRequests();
+      setMaintenanceRequests(data);
+    } catch (error) {
+      console.error('Failed to fetch requests:', error);
+      const stored = localStorage.getItem('gearguard_requests');
+      if (stored) setMaintenanceRequests(JSON.parse(stored));
+    }
+  };
+
+  const initializeData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch from backend API
+      const [equipmentData, requestsData, stagesData] = await Promise.all([
+        equipmentAPI.getEquipment().catch(() => []),
+        maintenanceAPI.getRequests().catch(() => []),
+        stagesAPI.getStages().catch(() => []),
+      ]);
+
+      setEquipment(equipmentData);
+      setMaintenanceRequests(requestsData);
+      setStages(stagesData);
+
+      // Initialize default categories and teams (can be made into API calls later)
+      const defaultCategories: EquipmentCategory[] = [
+        { id: 1, name: 'Computers', companyId: 1 },
+        { id: 2, name: 'Monitors', companyId: 1 },
+        { id: 3, name: 'Furniture', companyId: 1 },
+        { id: 4, name: 'Tools', companyId: 1 },
+      ];
+      setCategories(defaultCategories);
+
+      const defaultTeams: MaintenanceTeam[] = [
+        { id: 1, name: 'Internal Maintenance', companyId: 1 },
+      ];
+      setTeams(defaultTeams);
+
+      const defaultWorkCenters: WorkCenter[] = [
+        { id: 1, name: 'Main Workshop', companyId: 1 },
+      ];
+      setWorkCenters(defaultWorkCenters);
+
+    } catch (error) {
+      console.error('Failed to initialize data:', error);
+      // Fallback to localStorage if API fails
+      initializeFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initializeFromLocalStorage = () => {
+    // Initialize seed data from localStorage
+    const storedEquipment = localStorage.getItem('gearguard_equipment');
+    const storedRequests = localStorage.getItem('gearguard_requests');
+    const storedStages = localStorage.getItem('gearguard_stages');
+    const storedCategories = localStorage.getItem('gearguard_categories');
+    const storedTeams = localStorage.getItem('gearguard_teams');
+    const storedWorkCenters = localStorage.getItem('gearguard_workcenters');
+
+    if (!storedStages) {
+      const defaultStages: MaintenanceStage[] = [
+        { id: 1, name: 'New Request', sequence: 10, isScrap: false, isClosed: false, companyId: 1 },
+        { id: 2, name: 'In Progress', sequence: 20, isScrap: false, isClosed: false, companyId: 1 },
+        { id: 3, name: 'Repaired', sequence: 30, isScrap: false, isClosed: true, companyId: 1 },
+        { id: 4, name: 'Scrap', sequence: 100, isScrap: true, isClosed: true, companyId: 1 },
+      ];
+      localStorage.setItem('gearguard_stages', JSON.stringify(defaultStages));
+      setStages(defaultStages);
+    } else {
+      setStages(JSON.parse(storedStages));
+    }
+
+    if (!storedCategories) {
+      const defaultCategories: EquipmentCategory[] = [
+        { id: 1, name: 'Computers', companyId: 1 },
+        { id: 2, name: 'Monitors', companyId: 1 },
+        { id: 3, name: 'Employees', companyId: 1 },
+        { id: 4, name: 'Department', companyId: 1 },
+      ];
+      localStorage.setItem('gearguard_categories', JSON.stringify(defaultCategories));
+      setCategories(defaultCategories);
+    } else {
+      setCategories(JSON.parse(storedCategories));
+    }
+
+    if (!storedTeams) {
+      const defaultTeams: MaintenanceTeam[] = [
+        { id: 1, name: 'Internal Maintenance', companyId: 1 },
+      ];
+      localStorage.setItem('gearguard_teams', JSON.stringify(defaultTeams));
+      setTeams(defaultTeams);
+    } else {
+      setTeams(JSON.parse(storedTeams));
+    }
+
+    if (!storedWorkCenters) {
+      const defaultWorkCenters: WorkCenter[] = [
+        { id: 1, name: 'Main Workshop', companyId: 1 },
+      ];
+      localStorage.setItem('gearguard_workcenters', JSON.stringify(defaultWorkCenters));
+      setWorkCenters(defaultWorkCenters);
+    } else {
+      setWorkCenters(JSON.parse(storedWorkCenters));
+    }
+
+    if (!storedEquipment) {
+      const defaultEquipment: Equipment[] = [
+        {
+          id: 1,
+          name: 'Samsung Monitor 18"',
+          serialNumber: 'MON/203/1928',
+          categoryId: 1,
+          maintenanceTeamId: 1,
+          technicianUserId: 2,
+          companyId: 1,
+          healthPercentage: 95,
+        },
+        {
+          id: 2,
+          name: 'Acer Laptop',
+          serialNumber: 'LP/203/1928',
+          categoryId: 1,
+          maintenanceTeamId: 1,
+          technicianUserId: 2,
+          companyId: 1,
+          healthPercentage: 25,
+        },
+      ];
+      localStorage.setItem('gearguard_equipment', JSON.stringify(defaultEquipment));
+      setEquipment(defaultEquipment);
+    } else {
+      setEquipment(JSON.parse(storedEquipment));
+    }
+
+    if (!storedRequests) {
+      const defaultRequests: MaintenanceRequest[] = [
+        {
+          id: 1,
+          subject: 'Test activity',
+          description: 'Computer repair needed',
+          maintenanceType: 'corrective',
+          equipmentId: 2,
+          stageId: 1,
+          kanbanState: 'normal',
+          priority: 'high',
+          requestDate: '2025-12-18',
+          scheduledDate: '2025-12-28',
+          duration: 0,
+          createdByUserId: 1,
+          technicianUserId: 2,
+          maintenanceTeamId: 1,
+          companyId: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+      localStorage.setItem('gearguard_requests', JSON.stringify(defaultRequests));
+      setMaintenanceRequests(defaultRequests);
+    } else {
+      setMaintenanceRequests(JSON.parse(storedRequests));
+    }
+  };
+
+  useEffect(() => {
+    initializeData();
+  }, []);
+
+  const addEquipment = (newEquipment: Equipment) => {
+    const updated = [...equipment, newEquipment];
+    setEquipment(updated);
+    localStorage.setItem('gearguard_equipment', JSON.stringify(updated));
+  };
+
+  const updateEquipment = (id: number, updates: Partial<Equipment>) => {
+    const updated = equipment.map(e => e.id === id ? { ...e, ...updates } : e);
+    setEquipment(updated);
+    localStorage.setItem('gearguard_equipment', JSON.stringify(updated));
+  };
+
+  const deleteEquipment = (id: number) => {
+    const updated = equipment.filter(e => e.id !== id);
+    setEquipment(updated);
+    localStorage.setItem('gearguard_equipment', JSON.stringify(updated));
+  };
+
+  const addMaintenanceRequest = (newRequest: MaintenanceRequest) => {
+    const updated = [...maintenanceRequests, newRequest];
+    setMaintenanceRequests(updated);
+    localStorage.setItem('gearguard_requests', JSON.stringify(updated));
+  };
+
+  const updateMaintenanceRequest = (id: number, updates: Partial<MaintenanceRequest>) => {
+    const updated = maintenanceRequests.map(r => r.id === id ? { ...r, ...updates } : r);
+    setMaintenanceRequests(updated);
+    localStorage.setItem('gearguard_requests', JSON.stringify(updated));
+  };
+
+  const deleteMaintenanceRequest = (id: number) => {
+    const updated = maintenanceRequests.filter(r => r.id !== id);
+    setMaintenanceRequests(updated);
+    localStorage.setItem('gearguard_requests', JSON.stringify(updated));
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        equipment,
+        maintenanceRequests,
+        stages,
+        categories,
+        teams,
+        workCenters,
+        addEquipment,
+        updateEquipment,
+        deleteEquipment,
+        addMaintenanceRequest,
+        updateMaintenanceRequest,
+        deleteMaintenanceRequest,
+        initializeData,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};

@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --color-primary: #0284c7;
+    --color-secondary: #1a1f36;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-all shadow-md hover:shadow-lg active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-all active:scale-95;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-premium p-6 border border-gray-100;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+  }
+  
+  .badge {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+  }
+  
+  .status-normal {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .status-blocked {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .status-done {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .priority-low {
+    @apply bg-gray-100 text-gray-700;
+  }
+  
+  .priority-medium {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+  
+  .priority-high {
+    @apply bg-orange-100 text-orange-700;
+  }
+  
+  .priority-critical {
+    @apply bg-red-100 text-red-700;
+  }
+}
